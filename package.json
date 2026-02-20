@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node --loader ts-node/esm app.ts",
     "dev": "nodemon --exec \"node --loader ts-node/esm app.ts\"",
+    "register": "node --loader ts-node/esm register.ts",
     "ts:check": "tsc --noEmit"
   },
   "keywords": [],

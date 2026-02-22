@@ -43,46 +43,52 @@ export type {
  * Returns a Discord interaction response listing active quests with completed subquests for a channel.
  *
  * @param channelId - The Discord channel ID
+ * @param ephemeral - If true, response is only visible to the invoker
  * @returns Discord API interaction response with formatted quest list
  */
 export async function getQuestsForShow(
   channelId: string,
+  ephemeral?: boolean,
 ): Promise<APIInteractionResponse> {
   const [quests, completedQuests] = await Promise.all([
     getActiveQuests(channelId),
     getCompletedQuests(channelId),
   ]);
   const content = formatQuestList(quests, completedQuests);
-  return buildMessageResponse(content);
+  return buildMessageResponse(content, ephemeral);
 }
 
 /**
  * Returns a Discord interaction response listing all quests (active and completed) for a channel.
  *
  * @param channelId - The Discord channel ID
+ * @param ephemeral - If true, response is only visible to the invoker
  * @returns Discord API interaction response with formatted quest list
  */
 export async function getQuestsForShowAll(
   channelId: string,
+  ephemeral?: boolean,
 ): Promise<APIInteractionResponse> {
   const activeQuests = await getActiveQuests(channelId);
   const completedQuests = await getCompletedQuests(channelId);
   const content = formatAllQuestsList(activeQuests, completedQuests);
-  return buildMessageResponse(content);
+  return buildMessageResponse(content, ephemeral);
 }
 
 /**
  * Returns a Discord interaction response listing only completed quests for a channel.
  *
  * @param channelId - The Discord channel ID
+ * @param ephemeral - If true, response is only visible to the invoker
  * @returns Discord API interaction response with formatted completed quest list
  */
 export async function getQuestsForShowCompleted(
   channelId: string,
+  ephemeral?: boolean,
 ): Promise<APIInteractionResponse> {
   const quests = await getCompletedQuests(channelId);
   const content = formatCompletedQuestList(quests);
-  return buildMessageResponse(content);
+  return buildMessageResponse(content, ephemeral);
 }
 
 /**

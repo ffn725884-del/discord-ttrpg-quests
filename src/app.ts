@@ -7,6 +7,7 @@ import {
 } from "discord-api-types/v10";
 import { handleApplicationCommand } from "./interactions/applicationCommands";
 import { handleModalSubmit } from "./interactions/modalSubmits";
+import { handleMessageComponent } from "./interactions/messageComponents";
 import { initSchema } from "./db/index";
 import { debugMiddleware } from "./middleware/debugMiddleware";
 
@@ -27,6 +28,8 @@ app.post(
         return await handleApplicationCommand(req, res);
       case InteractionType.ModalSubmit:
         return await handleModalSubmit(req, res);
+      case InteractionType.MessageComponent:
+        return await handleMessageComponent(req, res);
       default:
         return res.status(400).send({ error: "Invalid interaction type" });
     }

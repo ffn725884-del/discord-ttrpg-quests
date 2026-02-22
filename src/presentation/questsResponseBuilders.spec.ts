@@ -13,7 +13,11 @@ import {
   type QuestClearModalConfig,
   type QuestDeleteModalConfig,
 } from "./questsResponseBuilders";
-import { ComponentType, InteractionResponseType } from "discord-api-types/v10";
+import {
+  ComponentType,
+  InteractionResponseType,
+  MessageFlags,
+} from "discord-api-types/v10";
 
 const SAMPLE_QUESTS = [
   { id: "q1", name: "Main Quest", parentQuestId: undefined },
@@ -32,6 +36,19 @@ describe("questsResponseBuilders", () => {
         InteractionResponseType.ChannelMessageWithSource,
       );
       expect(result.data.content).toBe("Hello, world!");
+    });
+
+    it("returns ephemeral message when ephemeral is true", () => {
+      const result = buildMessageResponse("Private!", true) as {
+        type: number;
+        data: { content: string; flags: number };
+      };
+
+      expect(result.type).toBe(
+        InteractionResponseType.ChannelMessageWithSource,
+      );
+      expect(result.data.content).toBe("Private!");
+      expect(result.data.flags).toBe(MessageFlags.Ephemeral);
     });
   });
 

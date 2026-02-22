@@ -3,6 +3,7 @@ import { Utils } from "discord-api-types/v10";
 import type { Request, Response } from "express";
 import { COMMAND_NAMES } from "../../commandDefinitions";
 import { handleQuests } from "./questsApplicationCommand";
+import { handleGm } from "./gmApplicationCommand";
 
 /**
  * Dispatches incoming application command interactions to the appropriate handler.
@@ -19,6 +20,13 @@ export async function handleApplicationCommand(
     case COMMAND_NAMES.QUESTS:
       if (Utils.isChatInputApplicationCommandInteraction(req.body)) {
         await handleQuests(req.body, res);
+      } else {
+        res.status(400).send({ error: "Invalid command" });
+      }
+      return;
+    case COMMAND_NAMES.GM:
+      if (Utils.isChatInputApplicationCommandInteraction(req.body)) {
+        await handleGm(req.body, res);
       } else {
         res.status(400).send({ error: "Invalid command" });
       }

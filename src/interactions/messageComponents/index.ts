@@ -1,0 +1,1 @@
+export { handleMessageComponent } from "./handleMessageComponent";

@@ -7,6 +7,7 @@ import {
   ApplicationCommandOptionType,
   ApplicationIntegrationType,
   InteractionContextType,
+  PermissionFlagsBits,
 } from "discord-api-types/v10";
 
 const integrationTypes = [
@@ -23,6 +24,12 @@ const contexts = [
 /** Command names for routing (e.g. switch cases) and command definitions. */
 export const COMMAND_NAMES = {
   QUESTS: "quests",
+  GM: "gm",
+} as const;
+
+/** GM subcommand names for routing and command definition. */
+export const GM_SUBCOMMANDS = {
+  ASSIGN: "assign",
 } as const;
 
 /** Quest subcommand names for routing and command definition. */
@@ -30,6 +37,7 @@ export const QUEST_SUBCOMMANDS = {
   CURRENT: "current",
   ALL: "all",
   SHOW_COMPLETED: "show-completed",
+  SHOWME: "showme",
   ADVANCE: "advance",
   ADD: "add",
   SUBQUEST: "subquest",
@@ -37,6 +45,13 @@ export const QUEST_SUBCOMMANDS = {
   DELETE: "delete",
   CLEAR: "clear",
   SYSTEM_STATUS: "system-status",
+} as const;
+
+/** Showme subcommand names (ephemeral variants of current, all, completed). */
+export const QUEST_SHOWME_SUBCOMMANDS = {
+  CURRENT: "current",
+  ALL: "all",
+  COMPLETED: "completed",
 } as const;
 
 export const QUESTS_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
@@ -58,6 +73,28 @@ export const QUESTS_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
       name: QUEST_SUBCOMMANDS.SHOW_COMPLETED,
       description: "List completed adventures",
       type: ApplicationCommandOptionType.Subcommand,
+    },
+    {
+      name: QUEST_SUBCOMMANDS.SHOWME,
+      description: "Show quests in ephemeral messages (visible only to you)",
+      type: ApplicationCommandOptionType.SubcommandGroup,
+      options: [
+        {
+          name: QUEST_SHOWME_SUBCOMMANDS.CURRENT,
+          description: "List active quests (ephemeral)",
+          type: ApplicationCommandOptionType.Subcommand,
+        },
+        {
+          name: QUEST_SHOWME_SUBCOMMANDS.ALL,
+          description: "List all quests (ephemeral)",
+          type: ApplicationCommandOptionType.Subcommand,
+        },
+        {
+          name: QUEST_SHOWME_SUBCOMMANDS.COMPLETED,
+          description: "List completed adventures (ephemeral)",
+          type: ApplicationCommandOptionType.Subcommand,
+        },
+      ],
     },
     {
       name: QUEST_SUBCOMMANDS.ADVANCE,
@@ -99,7 +136,24 @@ export const QUESTS_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
   contexts: [...contexts],
 };
 
+export const GM_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
+  name: COMMAND_NAMES.GM,
+  description: "Manage the Game Master (GM) for TTRPG campaigns",
+  type: ApplicationCommandType.ChatInput,
+  default_member_permissions: String(PermissionFlagsBits.Administrator),
+  options: [
+    {
+      name: GM_SUBCOMMANDS.ASSIGN,
+      description: "Assign the GM role to a user in this server",
+      type: ApplicationCommandOptionType.Subcommand,
+    },
+  ],
+  integration_types: [ApplicationIntegrationType.GuildInstall],
+  contexts: [InteractionContextType.Guild],
+};
+
 /** Commands to register with Discord. */
 export const COMMANDS_FOR_REGISTRATION: RESTPutAPIApplicationCommandsJSONBody = [
   QUESTS_COMMAND,
+  GM_COMMAND,
 ];

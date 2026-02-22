@@ -6,6 +6,7 @@ import type {
 import {
   ComponentType,
   InteractionResponseType,
+  MessageFlags,
   TextInputStyle,
 } from "discord-api-types/v10";
 import { MAIN_QUEST_EMOJI, STRINGS } from "./questsStrings";
@@ -77,12 +78,19 @@ function buildQuestSelectOptions(quests: QuestOption[]): APISelectMenuOption[] {
  * Builds a Discord interaction response that sends a plain text message.
  *
  * @param content - The message content to display
+ * @param ephemeral - If true, message is only visible to the invoker
  * @returns Discord API interaction response
  */
-export function buildMessageResponse(content: string): APIInteractionResponse {
+export function buildMessageResponse(
+  content: string,
+  ephemeral?: boolean,
+): APIInteractionResponse {
   return {
     type: InteractionResponseType.ChannelMessageWithSource,
-    data: { content },
+    data: {
+      content,
+      ...(ephemeral && { flags: MessageFlags.Ephemeral }),
+    },
   };
 }
 

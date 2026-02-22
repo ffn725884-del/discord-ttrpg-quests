@@ -20,3 +20,9 @@ CREATE TABLE IF NOT EXISTS quest_progress (
 );
 
 CREATE INDEX IF NOT EXISTS idx_quest_progress_quest_id ON quest_progress(quest_id);
+
+-- GM role mapping: guild_id -> role_id
+CREATE TABLE IF NOT EXISTS gm_roles (
+  guild_id TEXT NOT NULL PRIMARY KEY,
+  role_id TEXT NOT NULL
+);

@@ -1,7 +1,15 @@
 import type { APIChatInputApplicationCommandInteraction } from "discord-api-types/v10";
 import type { Response } from "express";
-import { InteractionResponseType } from "discord-api-types/v10";
-import { QUESTS_COMMAND, QUEST_SUBCOMMANDS } from "../../commandDefinitions";
+import {
+  ApplicationCommandOptionType,
+  InteractionResponseType,
+  MessageFlags,
+} from "discord-api-types/v10";
+import {
+  QUESTS_COMMAND,
+  QUEST_SUBCOMMANDS,
+  QUEST_SHOWME_SUBCOMMANDS,
+} from "../../commandDefinitions";
 import { hasAdminPermission } from "../../utils/permissions";
 import { buildPermissionDeniedResponse } from "../../presentation/permissionResponseBuilder";
 import {
@@ -57,7 +65,13 @@ export async function handleQuests(
   res: Response,
 ): Promise<void> {
   const channelId = interaction.channel.id;
-  const subcommand = interaction.data.options?.[0]?.name;
+  const topLevelOption = interaction.data.options?.[0];
+  const subcommand = topLevelOption?.name;
+  const nestedSubcommand =
+    topLevelOption?.type === ApplicationCommandOptionType.SubcommandGroup
+      ? topLevelOption.options?.[0]?.name
+      : undefined;
+
   switch (subcommand) {
     case QUEST_SUBCOMMANDS.CURRENT: {
       const response = await getQuestsForShow(channelId);
@@ -73,6 +87,34 @@ export async function handleQuests(
       const response = await getQuestsForShowCompleted(channelId);
       res.send(response);
       return;
+    }
+    case QUEST_SUBCOMMANDS.SHOWME: {
+      switch (nestedSubcommand) {
+        case QUEST_SHOWME_SUBCOMMANDS.CURRENT: {
+          const response = await getQuestsForShow(channelId, true);
+          res.send(response);
+          return;
+        }
+        case QUEST_SHOWME_SUBCOMMANDS.ALL: {
+          const response = await getQuestsForShowAll(channelId, true);
+          res.send(response);
+          return;
+        }
+        case QUEST_SHOWME_SUBCOMMANDS.COMPLETED: {
+          const response = await getQuestsForShowCompleted(channelId, true);
+          res.send(response);
+          return;
+        }
+        default:
+          res.send({
+            type: InteractionResponseType.ChannelMessageWithSource,
+            data: {
+              content: `Unknown showme subcommand. Use \`/quests showme current\`, \`/quests showme all\`, or \`/quests showme completed\`.`,
+              flags: MessageFlags.Ephemeral,
+            },
+          });
+          return;
+      }
     }
     case QUEST_SUBCOMMANDS.ADVANCE: {
       const response = await getAdvanceModal(channelId, {

@@ -1,0 +1,1 @@
+export { handleApplicationCommand } from "./handleApplicationCommand";

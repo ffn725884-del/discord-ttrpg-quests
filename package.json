@@ -2,27 +2,37 @@
   "name": "discord-ttrpg-quests",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --loader ts-node/esm app.ts",
-    "dev": "nodemon --exec \"node --loader ts-node/esm app.ts\"",
-    "register": "node --loader ts-node/esm register.ts",
-    "ts:check": "tsc --noEmit"
+    "test": "jest",
+    "start": "tsx src/app.ts",
+    "dev": "nodemon --exec \"tsx src/app.ts\"",
+    "register": "tsx scripts/register.ts",
+    "ts:check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "discord-api-types": "^0.38.40",
     "discord-interactions": "^4.4.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "ts-node": "^10.9.2"
+    "knex": "^3.1.0",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "eslint": "^10.0.1",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.13",
-    "typescript": "^5.7.2"
+    "ts-jest": "^29.4.6",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.56.0"
   }
 }

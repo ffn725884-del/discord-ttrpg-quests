@@ -1,12 +1,10 @@
 import type { Knex } from "knex";
 import path from "path";
-import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(process.cwd());
 
 const dbPath =
-  process.env.DATABASE_URL ||
-  path.join(__dirname, "data", "quests.db");
+  process.env.DATABASE_URL || path.join(root, "data", "quests.db");
 
 const config: Knex.Config = {
   client: "sqlite3",
@@ -14,6 +12,11 @@ const config: Knex.Config = {
     filename: dbPath,
   },
   useNullAsDefault: true,
+  migrations: {
+    directory: path.join(root, "src", "db", "migrations"),
+    extension: "ts",
+    loadExtensions: [".ts"],
+  },
 };
 
 export default config;

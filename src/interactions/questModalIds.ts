@@ -28,3 +28,17 @@ export const QUEST_CLEAR_CONFIRM_INPUT_CUSTOM_ID = "quest_clear_confirm";
 // Delete quest modal
 export const QUEST_DELETE_MODAL_ID = "quest_delete_modal";
 export const QUEST_DELETE_SELECT_CUSTOM_ID = "quest_delete_select";
+
+// Prepare quest modal (GM only)
+export const QUEST_PREPARE_MODAL_ID = "quest_prepare_modal";
+export const QUEST_PREPARE_PARENT_SELECT_CUSTOM_ID = "quest_prepare_parent_select";
+export const QUEST_PREPARE_NAME_INPUT_CUSTOM_ID = "quest_prepare_name";
+export const QUEST_PREPARE_PROGRESS_INPUT_CUSTOM_ID = "quest_prepare_progress";
+
+// Reveal quest modal (GM only)
+export const QUEST_REVEAL_MODAL_ID = "quest_reveal_modal";
+export const QUEST_REVEAL_SELECT_CUSTOM_ID = "quest_reveal_select";
+
+// Discard quest modal (GM only)
+export const QUEST_DISCARD_MODAL_ID = "quest_discard_modal";
+export const QUEST_DISCARD_SELECT_CUSTOM_ID = "quest_discard_select";

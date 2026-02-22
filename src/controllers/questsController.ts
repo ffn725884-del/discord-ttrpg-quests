@@ -4,10 +4,13 @@ import {
   getCompletedQuests,
   getAllQuests,
   getTopLevelActiveQuests,
+  getTopLevelQuestsForParentSelect,
+  getPreparedQuests,
   addQuestProgress,
   addQuest,
   completeQuest as completeQuestInDAL,
   deleteQuest as deleteQuestInDAL,
+  revealPreparedQuest as revealPreparedQuestInDAL,
   getQuestCount,
   clearAllQuests as clearAllQuestsInDAL,
 } from "../dal/questsDAL";
@@ -24,11 +27,17 @@ import {
   buildDeleteModalResponse,
   buildClearModalResponse,
   buildSubquestModalResponse,
+  buildPrepareModalResponse,
+  buildRevealModalResponse,
+  buildDiscardModalResponse,
   type QuestAdvanceModalConfig,
   type QuestCompleteModalConfig,
   type QuestSubquestModalConfig,
   type QuestClearModalConfig,
   type QuestDeleteModalConfig,
+  type QuestPrepareModalConfig,
+  type QuestRevealModalConfig,
+  type QuestDiscardModalConfig,
 } from "../presentation/questsResponseBuilders";
 
 export type {
@@ -37,6 +46,9 @@ export type {
   QuestSubquestModalConfig,
   QuestClearModalConfig,
   QuestDeleteModalConfig,
+  QuestPrepareModalConfig,
+  QuestRevealModalConfig,
+  QuestDiscardModalConfig,
 };
 
 /**
@@ -198,6 +210,130 @@ export async function getSubquestModal(
     return buildMessageResponse(STRINGS.noTopLevelQuests);
   }
   return buildSubquestModalResponse(topLevelQuests, modalConfig);
+}
+
+/**
+ * Returns a Discord modal for preparing a quest (GM only).
+ * Prepare can always create top-level with no parent, so we always show the modal.
+ *
+ * @param channelId - The Discord channel ID
+ * @param modalConfig - Configuration for modal IDs
+ * @returns Discord API interaction response (modal)
+ */
+export async function getPrepareModal(
+  channelId: string,
+  modalConfig: QuestPrepareModalConfig,
+): Promise<APIInteractionResponse> {
+  const topLevelQuests = await getTopLevelQuestsForParentSelect(channelId);
+  return buildPrepareModalResponse(topLevelQuests, modalConfig);
+}
+
+/**
+ * Returns a Discord modal for revealing a prepared quest (GM only).
+ * Shows a message if no prepared quests exist.
+ *
+ * @param channelId - The Discord channel ID
+ * @param modalConfig - Configuration for modal IDs
+ * @returns Discord API interaction response (modal or message)
+ */
+export async function getRevealModal(
+  channelId: string,
+  modalConfig: QuestRevealModalConfig,
+): Promise<APIInteractionResponse> {
+  const quests = await getPreparedQuests(channelId);
+  if (quests.length === 0) {
+    return buildMessageResponse(STRINGS.noPreparedQuestsToReveal);
+  }
+  return buildRevealModalResponse(quests, modalConfig);
+}
+
+/**
+ * Returns a Discord modal for discarding a prepared quest (GM only).
+ * Shows a message if no prepared quests exist.
+ *
+ * @param channelId - The Discord channel ID
+ * @param modalConfig - Configuration for modal IDs
+ * @returns Discord API interaction response (modal or message)
+ */
+export async function getDiscardModal(
+  channelId: string,
+  modalConfig: QuestDiscardModalConfig,
+): Promise<APIInteractionResponse> {
+  const quests = await getPreparedQuests(channelId);
+  if (quests.length === 0) {
+    return buildMessageResponse(STRINGS.noPreparedQuestsToDiscard);
+  }
+  return buildDiscardModalResponse(quests, modalConfig);
+}
+
+/**
+ * Creates a new prepared quest (hidden until revealed). GM only.
+ *
+ * @param channelId - The Discord channel ID
+ * @param name - Quest name
+ * @param progressText - Optional initial progress/details
+ * @param parentQuestId - Optional parent quest ID for subquest
+ * @returns Discord API interaction response with ephemeral confirmation
+ */
+export async function createPreparedQuest(
+  channelId: string,
+  name: string,
+  progressText: string,
+  parentQuestId?: string,
+): Promise<APIInteractionResponse> {
+  const progress = progressText.trim() ? [progressText.trim()] : [];
+  await addQuest(channelId, {
+    name,
+    progress,
+    parentQuestId: parentQuestId || undefined,
+    prepared: true,
+  });
+  return buildMessageResponse(STRINGS.prepareSuccess(name), true);
+}
+
+/**
+ * Reveals a prepared quest to everyone (sets prepared = 0).
+ *
+ * @param channelId - The Discord channel ID
+ * @param questId - ID of the prepared quest to reveal
+ * @returns Discord API interaction response (non-ephemeral, like quest added)
+ */
+export async function revealPreparedQuest(
+  channelId: string,
+  questId: string,
+): Promise<APIInteractionResponse> {
+  const quest = await revealPreparedQuestInDAL(channelId, questId);
+  if (!quest) {
+    return buildMessageResponse(STRINGS.questNotFound);
+  }
+  const message = quest.parentQuestId
+    ? STRINGS.subquestAdded(quest.name)
+    : STRINGS.questAdded(quest.name);
+  return buildMessageResponse(message);
+}
+
+/**
+ * Discards (deletes) a prepared quest. GM only.
+ *
+ * @param channelId - The Discord channel ID
+ * @param questId - ID of the prepared quest to discard
+ * @returns Discord API interaction response with ephemeral confirmation
+ */
+export async function discardPreparedQuest(
+  channelId: string,
+  questId: string,
+): Promise<APIInteractionResponse> {
+  const quest = await getPreparedQuests(channelId).then((q) =>
+    q.find((x) => x.id === questId),
+  );
+  const success = await deleteQuestInDAL(channelId, questId);
+  if (!success) {
+    return buildMessageResponse(STRINGS.questNotFound, true);
+  }
+  return buildMessageResponse(
+    STRINGS.discardSuccess(quest?.name ?? "Unknown"),
+    true,
+  );
 }
 
 /**

@@ -10,14 +10,21 @@ import {
   QUEST_SUBCOMMANDS,
   QUEST_SHOWME_SUBCOMMANDS,
 } from "../../commandDefinitions";
-import { hasAdminPermission } from "../../utils/permissions";
-import { buildPermissionDeniedResponse } from "../../presentation/permissionResponseBuilder";
+import { hasAdminPermission, memberHasRole } from "../../utils/permissions";
+import {
+  buildPermissionDeniedResponse,
+  buildGmPermissionDeniedResponse,
+} from "../../presentation/permissionResponseBuilder";
+import { getGmRoleId } from "../../dal/gmDAL";
 import {
   getQuestsForShow,
   getQuestsForShowAll,
   getQuestsForShowCompleted,
   getAdvanceModal,
   getSubquestModal,
+  getPrepareModal,
+  getRevealModal,
+  getDiscardModal,
   getCompleteModal,
   getDeleteModal,
   getClearConfirmationModal,
@@ -42,6 +49,14 @@ import {
   QUEST_CLEAR_CONFIRM_INPUT_CUSTOM_ID,
   QUEST_DELETE_MODAL_ID,
   QUEST_DELETE_SELECT_CUSTOM_ID,
+  QUEST_PREPARE_MODAL_ID,
+  QUEST_PREPARE_PARENT_SELECT_CUSTOM_ID,
+  QUEST_PREPARE_NAME_INPUT_CUSTOM_ID,
+  QUEST_PREPARE_PROGRESS_INPUT_CUSTOM_ID,
+  QUEST_REVEAL_MODAL_ID,
+  QUEST_REVEAL_SELECT_CUSTOM_ID,
+  QUEST_DISCARD_MODAL_ID,
+  QUEST_DISCARD_SELECT_CUSTOM_ID,
 } from "../questModalIds";
 
 function getQuestsSubcommandHelpText(): string {
@@ -142,6 +157,47 @@ export async function handleQuests(
         progressInputId: QUEST_SUBQUEST_PROGRESS_INPUT_CUSTOM_ID,
       });
       res.send(response);
+      return;
+    }
+    case QUEST_SUBCOMMANDS.PREPARE:
+    case QUEST_SUBCOMMANDS.REVEAL:
+    case QUEST_SUBCOMMANDS.DISCARD: {
+      if (!interaction.guild_id) {
+        res.send({
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "This command must be used in a server.",
+            flags: MessageFlags.Ephemeral,
+          },
+        });
+        return;
+      }
+      const roleId = await getGmRoleId(interaction.guild_id);
+      if (!memberHasRole(interaction, roleId)) {
+        res.send(buildGmPermissionDeniedResponse(roleId !== null));
+        return;
+      }
+      if (subcommand === QUEST_SUBCOMMANDS.PREPARE) {
+        const response = await getPrepareModal(channelId, {
+          modalId: QUEST_PREPARE_MODAL_ID,
+          parentQuestSelectId: QUEST_PREPARE_PARENT_SELECT_CUSTOM_ID,
+          nameInputId: QUEST_PREPARE_NAME_INPUT_CUSTOM_ID,
+          progressInputId: QUEST_PREPARE_PROGRESS_INPUT_CUSTOM_ID,
+        });
+        res.send(response);
+      } else if (subcommand === QUEST_SUBCOMMANDS.REVEAL) {
+        const response = await getRevealModal(channelId, {
+          modalId: QUEST_REVEAL_MODAL_ID,
+          questSelectId: QUEST_REVEAL_SELECT_CUSTOM_ID,
+        });
+        res.send(response);
+      } else {
+        const response = await getDiscardModal(channelId, {
+          modalId: QUEST_DISCARD_MODAL_ID,
+          questSelectId: QUEST_DISCARD_SELECT_CUSTOM_ID,
+        });
+        res.send(response);
+      }
       return;
     }
     case QUEST_SUBCOMMANDS.COMPLETE: {

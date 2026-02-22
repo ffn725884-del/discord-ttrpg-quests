@@ -60,6 +60,32 @@ export const STRINGS = {
   questSelectPlaceholder: "Choose a quest...",
   parentQuestPlaceholder: "Choose parent quest...",
 
+  prepareModalTitle: "Prepare Quest",
+  prepareModalParentLabel: "Parent Quest",
+  prepareModalParentDescription:
+    "Optional: attach to an existing quest as a subquest",
+  prepareModalNameLabel: "Name",
+  prepareModalDetailsLabel: "Details",
+  prepareModalDetailsDescription: "How did this quest begin? (optional)",
+  prepareModalNamePlaceholder: "Slay the dragon of the vale",
+  prepareModalDetailsPlaceholder:
+    "The tavern keeper pointed us toward the mountain...",
+  prepareNoParentOption: "— No parent (top-level quest) —",
+  prepareSuccess: (name: string) =>
+    `Quest "${name}" prepared. Use \`/quests reveal\` when ready.`,
+
+  revealModalTitle: "Reveal Prepared Quest",
+  revealModalQuestLabel: "Quest",
+  revealModalQuestDescription: "Choose a prepared quest to reveal to everyone",
+  noPreparedQuestsToReveal: "No prepared quests to reveal.",
+
+  discardModalTitle: "Discard Prepared Quest",
+  discardModalQuestLabel: "Quest",
+  discardModalQuestDescription:
+    "Choose a prepared quest to discard (this cannot be undone)",
+  noPreparedQuestsToDiscard: "No prepared quests to discard.",
+  discardSuccess: (name: string) => `Prepared quest "${name}" discarded.`,
+
   questAdded: (name: string) => `Quest "${name}" added to your journal!`,
   subquestAdded: (name: string) => `Subquest "${name}" added to your journal!`,
   adventureProgressLogged: "Adventure progress logged!",

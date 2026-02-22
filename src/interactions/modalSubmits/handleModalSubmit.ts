@@ -6,6 +6,9 @@ import {
   QUEST_SUBQUEST_MODAL_ID,
   QUEST_CLEAR_MODAL_ID,
   QUEST_DELETE_MODAL_ID,
+  QUEST_PREPARE_MODAL_ID,
+  QUEST_REVEAL_MODAL_ID,
+  QUEST_DISCARD_MODAL_ID,
 } from "../questModalIds";
 import { handleQuestAdvanceModalSubmit } from "./questAdvanceModalSubmit";
 import { handleQuestAddModalSubmit } from "./questAddModalSubmit";
@@ -13,6 +16,9 @@ import { handleQuestCompleteModalSubmit } from "./questCompleteModalSubmit";
 import { handleQuestSubquestModalSubmit } from "./questSubquestModalSubmit";
 import { handleQuestClearModalSubmit } from "./questClearModalSubmit";
 import { handleQuestDeleteModalSubmit } from "./questDeleteModalSubmit";
+import { handleQuestPrepareModalSubmit } from "./questPrepareModalSubmit";
+import { handleQuestRevealModalSubmit } from "./questRevealModalSubmit";
+import { handleQuestDiscardModalSubmit } from "./questDiscardModalSubmit";
 
 function getModalBaseId(customId: string): string {
   const colonIndex = customId.indexOf(":");
@@ -51,6 +57,15 @@ export async function handleModalSubmit(
       return;
     case QUEST_DELETE_MODAL_ID:
       await handleQuestDeleteModalSubmit(req.body, res);
+      return;
+    case QUEST_PREPARE_MODAL_ID:
+      await handleQuestPrepareModalSubmit(req.body, res);
+      return;
+    case QUEST_REVEAL_MODAL_ID:
+      await handleQuestRevealModalSubmit(req.body, res);
+      return;
+    case QUEST_DISCARD_MODAL_ID:
+      await handleQuestDiscardModalSubmit(req.body, res);
       return;
     default:
       res.status(400).send({ error: "Unknown modal" });

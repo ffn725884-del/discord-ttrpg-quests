@@ -6,6 +6,7 @@ export interface Quest {
   name: string;
   progress: string[];
   completed?: boolean;
+  prepared?: boolean;
   parentQuestId?: string;
 }
 
@@ -14,6 +15,7 @@ interface QuestRow {
   channel_id: string;
   name: string;
   completed: number;
+  prepared?: number;
   parent_quest_id: number | null;
 }
 
@@ -52,6 +54,7 @@ async function questsWithProgress(
     name: r.name,
     progress: progressByQuest.get(r.id) ?? [],
     completed: Boolean(r.completed),
+    prepared: Boolean((r as QuestRow).prepared ?? 0),
     parentQuestId: r.parent_quest_id != null ? idToString(r.parent_quest_id) : undefined,
   }));
 }
@@ -71,7 +74,7 @@ export async function getQuest(
   if (Number.isNaN(id)) return null;
   const rows = await db<QuestRow>("quests")
     .where({ channel_id: channelId, id })
-    .select("id", "channel_id", "name", "completed", "parent_quest_id");
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
   const quests = await questsWithProgress(rows);
   return quests[0] ?? null;
 }
@@ -84,23 +87,23 @@ export async function getQuest(
  */
 export async function getActiveQuests(channelId: string): Promise<Quest[]> {
   const rows = await db<QuestRow>("quests")
-    .where({ channel_id: channelId, completed: 0 })
-    .select("id", "channel_id", "name", "completed", "parent_quest_id");
+    .where({ channel_id: channelId, completed: 0, prepared: 0 })
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
   return questsWithProgress(rows);
 }
 
-/** Returns only top-level quests (no parent). */
+/** Returns only top-level active quests (no parent, not prepared). */
 export async function getTopLevelActiveQuests(
   channelId: string
 ): Promise<Quest[]> {
   const rows = await db<QuestRow>("quests")
-    .where({ channel_id: channelId, completed: 0 })
+    .where({ channel_id: channelId, completed: 0, prepared: 0 })
     .whereNull("parent_quest_id")
-    .select("id", "channel_id", "name", "completed", "parent_quest_id");
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
   return questsWithProgress(rows);
 }
 
-/** Returns subquests of a given parent quest. */
+/** Returns subquests of a given parent quest (excludes prepared). */
 export async function getSubquests(
   channelId: string,
   parentQuestId: string
@@ -109,8 +112,9 @@ export async function getSubquests(
     .where({
       channel_id: channelId,
       parent_quest_id: parseInt(parentQuestId, 10),
+      prepared: 0,
     })
-    .select("id", "channel_id", "name", "completed", "parent_quest_id");
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
   return questsWithProgress(rows);
 }
 
@@ -122,16 +126,16 @@ export async function getSubquests(
  */
 export async function getCompletedQuests(channelId: string): Promise<Quest[]> {
   const rows = await db<QuestRow>("quests")
-    .where({ channel_id: channelId, completed: 1 })
-    .select("id", "channel_id", "name", "completed", "parent_quest_id");
+    .where({ channel_id: channelId, completed: 1, prepared: 0 })
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
   return questsWithProgress(rows);
 }
 
-/** Returns all quests (active and completed) for a channel. */
+/** Returns all quests (active and completed, excludes prepared) for a channel. */
 export async function getAllQuests(channelId: string): Promise<Quest[]> {
   const rows = await db<QuestRow>("quests")
-    .where("channel_id", channelId)
-    .select("id", "channel_id", "name", "completed", "parent_quest_id");
+    .where({ channel_id: channelId, prepared: 0 })
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
   return questsWithProgress(rows);
 }
 
@@ -208,6 +212,7 @@ export async function completeQuest(
       channel_id: channelId,
       parent_quest_id: id,
       completed: 0,
+      prepared: 0,
     });
 
     for (const sub of subquests) {
@@ -267,6 +272,7 @@ export interface AddQuestInput {
   name: string;
   progress?: string[];
   parentQuestId?: string;
+  prepared?: boolean;
 }
 
 /** Returns the total count of quests (active + completed) for a channel. */
@@ -276,6 +282,51 @@ export async function getQuestCount(channelId: string): Promise<number> {
     .count("* as count")
     .first();
   return Number(result?.count ?? 0);
+}
+
+/** Returns all prepared quests for a channel. */
+export async function getPreparedQuests(channelId: string): Promise<Quest[]> {
+  const rows = await db<QuestRow>("quests")
+    .where({ channel_id: channelId, prepared: 1 })
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
+  return questsWithProgress(rows);
+}
+
+/** Returns top-level quests (active or prepared) for parent selection in prepare modal. */
+export async function getTopLevelQuestsForParentSelect(
+  channelId: string
+): Promise<Quest[]> {
+  const rows = await db<QuestRow>("quests")
+    .where("channel_id", channelId)
+    .whereNull("parent_quest_id")
+    .where((builder) => {
+      builder
+        .where({ completed: 0, prepared: 0 })
+        .orWhere({ prepared: 1 });
+    })
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
+  return questsWithProgress(rows);
+}
+
+/** Reveals a prepared quest (sets prepared = 0). Returns the quest or null. */
+export async function revealPreparedQuest(
+  channelId: string,
+  questId: string
+): Promise<Quest | null> {
+  const id = parseInt(questId, 10);
+  if (Number.isNaN(id)) return null;
+
+  const quest = await db<QuestRow>("quests")
+    .where({ channel_id: channelId, id, prepared: 1 })
+    .first();
+  if (!quest) return null;
+
+  await db("quests").where({ id }).update({ prepared: 0 });
+  const rows = await db<QuestRow>("quests")
+    .where({ channel_id: channelId, id })
+    .select("id", "channel_id", "name", "completed", "prepared", "parent_quest_id");
+  const quests = await questsWithProgress(rows);
+  return quests[0] ?? null;
 }
 
 /** Permanently removes all quests (and their progress) for a channel. */
@@ -306,6 +357,7 @@ export async function addQuest(
       channel_id: channelId,
       name: quest.name,
       completed: 0,
+      prepared: quest.prepared ? 1 : 0,
       parent_quest_id: quest.parentQuestId
         ? parseInt(quest.parentQuestId, 10)
         : null,

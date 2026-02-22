@@ -4,14 +4,27 @@ import {
   getAdvanceModal,
   getCompleteModal,
   getSubquestModal,
+  getPrepareModal,
+  getRevealModal,
+  getDiscardModal,
   createQuest,
+  createPreparedQuest,
+  revealPreparedQuest,
+  discardPreparedQuest,
   recordQuestProgress,
   completeQuest,
   type QuestAdvanceModalConfig,
   type QuestCompleteModalConfig,
   type QuestSubquestModalConfig,
+  type QuestPrepareModalConfig,
+  type QuestRevealModalConfig,
+  type QuestDiscardModalConfig,
 } from "./questsController";
-import { ComponentType, InteractionResponseType } from "discord-api-types/v10";
+import {
+  ComponentType,
+  InteractionResponseType,
+  MessageFlags,
+} from "discord-api-types/v10";
 import * as questsDAL from "../dal/questsDAL";
 
 jest.mock("../dal/questsDAL");
@@ -36,6 +49,20 @@ const mockAddQuest = questsDAL.addQuest as jest.MockedFunction<
 mockAddQuest.mockResolvedValue(undefined);
 const mockCompleteQuest = questsDAL.completeQuest as jest.MockedFunction<
   typeof questsDAL.completeQuest
+>;
+const mockGetTopLevelQuestsForParentSelect =
+  questsDAL.getTopLevelQuestsForParentSelect as jest.MockedFunction<
+    typeof questsDAL.getTopLevelQuestsForParentSelect
+  >;
+const mockGetPreparedQuests = questsDAL.getPreparedQuests as jest.MockedFunction<
+  typeof questsDAL.getPreparedQuests
+>;
+const mockRevealPreparedQuest =
+  questsDAL.revealPreparedQuest as jest.MockedFunction<
+    typeof questsDAL.revealPreparedQuest
+  >;
+const mockDeleteQuest = questsDAL.deleteQuest as jest.MockedFunction<
+  typeof questsDAL.deleteQuest
 >;
 
 const TEST_CHANNEL_ID = "channel-123";
@@ -295,6 +322,276 @@ describe("questsController", () => {
         },
       });
       expect(mockGetTopLevelActiveQuests).toHaveBeenCalledWith(TEST_CHANNEL_ID);
+    });
+  });
+
+  describe("getPrepareModal", () => {
+    const modalConfig: QuestPrepareModalConfig = {
+      modalId: "prepare-modal-1",
+      parentQuestSelectId: "parent-select",
+      nameInputId: "name-input",
+      progressInputId: "progress-input",
+    };
+
+    it("returns modal with no-parent option when no top-level quests", async () => {
+      mockGetTopLevelQuestsForParentSelect.mockResolvedValue([]);
+
+      const result = (await getPrepareModal(TEST_CHANNEL_ID, modalConfig)) as {
+        type: number;
+        data: { custom_id: string; components: unknown[] };
+      };
+
+      expect(result.type).toBe(InteractionResponseType.Modal);
+      expect(result.data.custom_id).toBe("prepare-modal-1");
+      expect(result.data.components).toHaveLength(3);
+      expect(mockGetTopLevelQuestsForParentSelect).toHaveBeenCalledWith(
+        TEST_CHANNEL_ID,
+      );
+    });
+
+    it("returns modal with parent options when quests exist", async () => {
+      mockGetTopLevelQuestsForParentSelect.mockResolvedValue([
+        {
+          id: "q1",
+          channelId: TEST_CHANNEL_ID,
+          name: "Main Quest",
+          progress: [],
+        },
+      ]);
+
+      const result = (await getPrepareModal(TEST_CHANNEL_ID, modalConfig)) as {
+        type: number;
+        data: { custom_id: string; components: unknown[] };
+      };
+
+      expect(result.type).toBe(InteractionResponseType.Modal);
+      expect(result.data.components[0]).toMatchObject({
+        type: ComponentType.Label,
+        label: "Parent Quest",
+        component: {
+          type: ComponentType.StringSelect,
+          custom_id: "parent-select",
+        },
+      });
+    });
+  });
+
+  describe("getRevealModal", () => {
+    const modalConfig: QuestRevealModalConfig = {
+      modalId: "reveal-modal-1",
+      questSelectId: "quest-select",
+    };
+
+    it("returns text message when no prepared quests", async () => {
+      mockGetPreparedQuests.mockResolvedValue([]);
+
+      const result = (await getRevealModal(TEST_CHANNEL_ID, modalConfig)) as {
+        type: number;
+        data: { content: string };
+      };
+
+      expect(result.type).toBe(
+        InteractionResponseType.ChannelMessageWithSource,
+      );
+      expect(result.data.content).toBe("No prepared quests to reveal.");
+    });
+
+    it("returns modal when prepared quests exist", async () => {
+      mockGetPreparedQuests.mockResolvedValue([
+        {
+          id: "q1",
+          channelId: TEST_CHANNEL_ID,
+          name: "Secret Quest",
+          progress: [],
+        },
+      ]);
+
+      const result = (await getRevealModal(TEST_CHANNEL_ID, modalConfig)) as {
+        type: number;
+        data: { custom_id: string };
+      };
+
+      expect(result.type).toBe(InteractionResponseType.Modal);
+      expect(result.data.custom_id).toBe("reveal-modal-1");
+    });
+  });
+
+  describe("getDiscardModal", () => {
+    const modalConfig: QuestDiscardModalConfig = {
+      modalId: "discard-modal-1",
+      questSelectId: "quest-select",
+    };
+
+    it("returns text message when no prepared quests", async () => {
+      mockGetPreparedQuests.mockResolvedValue([]);
+
+      const result = (await getDiscardModal(TEST_CHANNEL_ID, modalConfig)) as {
+        type: number;
+        data: { content: string };
+      };
+
+      expect(result.type).toBe(
+        InteractionResponseType.ChannelMessageWithSource,
+      );
+      expect(result.data.content).toBe("No prepared quests to discard.");
+    });
+
+    it("returns modal when prepared quests exist", async () => {
+      mockGetPreparedQuests.mockResolvedValue([
+        {
+          id: "q1",
+          channelId: TEST_CHANNEL_ID,
+          name: "Secret Quest",
+          progress: [],
+        },
+      ]);
+
+      const result = (await getDiscardModal(TEST_CHANNEL_ID, modalConfig)) as {
+        type: number;
+        data: { custom_id: string };
+      };
+
+      expect(result.type).toBe(InteractionResponseType.Modal);
+      expect(result.data.custom_id).toBe("discard-modal-1");
+    });
+  });
+
+  describe("createPreparedQuest", () => {
+    it("calls addQuest with prepared true and returns ephemeral success", async () => {
+      const result = (await createPreparedQuest(
+        TEST_CHANNEL_ID,
+        "Secret Quest",
+        "Initial details",
+      )) as {
+        type: number;
+        data: { content: string; flags: number };
+      };
+
+      expect(mockAddQuest).toHaveBeenCalledWith(TEST_CHANNEL_ID, {
+        name: "Secret Quest",
+        progress: ["Initial details"],
+        prepared: true,
+      });
+      expect(result.data.content).toContain("Secret Quest");
+      expect(result.data.content).toContain("reveal");
+      expect(result.data.flags).toBe(MessageFlags.Ephemeral)
+    });
+
+    it("creates subquest when parentQuestId provided", async () => {
+      await createPreparedQuest(
+        TEST_CHANNEL_ID,
+        "Secret Subquest",
+        "",
+        "parent-1",
+      );
+
+      expect(mockAddQuest).toHaveBeenCalledWith(TEST_CHANNEL_ID, {
+        name: "Secret Subquest",
+        progress: [],
+        parentQuestId: "parent-1",
+        prepared: true,
+      });
+    });
+  });
+
+  describe("revealPreparedQuest", () => {
+    it("returns quest added message when reveal succeeds", async () => {
+      mockRevealPreparedQuest.mockResolvedValue({
+        id: "q1",
+        channelId: TEST_CHANNEL_ID,
+        name: "Revealed Quest",
+        progress: [],
+        parentQuestId: undefined,
+      });
+
+      const result = (await revealPreparedQuest(
+        TEST_CHANNEL_ID,
+        "q1",
+      )) as {
+        data: { content: string };
+      };
+
+      expect(mockRevealPreparedQuest).toHaveBeenCalledWith(
+        TEST_CHANNEL_ID,
+        "q1",
+      );
+      expect(result.data.content).toBe(
+        'Quest "Revealed Quest" added to your journal!',
+      );
+    });
+
+    it("returns subquest added message when revealing subquest", async () => {
+      mockRevealPreparedQuest.mockResolvedValue({
+        id: "q2",
+        channelId: TEST_CHANNEL_ID,
+        name: "Revealed Subquest",
+        progress: [],
+        parentQuestId: "q1",
+      });
+
+      const result = (await revealPreparedQuest(
+        TEST_CHANNEL_ID,
+        "q2",
+      )) as {
+        data: { content: string };
+      };
+
+      expect(result.data.content).toBe(
+        'Subquest "Revealed Subquest" added to your journal!',
+      );
+    });
+
+    it("returns not found when reveal returns null", async () => {
+      mockRevealPreparedQuest.mockResolvedValue(null);
+
+      const result = (await revealPreparedQuest(
+        TEST_CHANNEL_ID,
+        "invalid",
+      )) as {
+        data: { content: string };
+      };
+
+      expect(result.data.content).toBe("Quest not found. Please try again.");
+    });
+  });
+
+  describe("discardPreparedQuest", () => {
+    it("returns ephemeral success when discard succeeds", async () => {
+      mockGetPreparedQuests.mockResolvedValue([
+        {
+          id: "q1",
+          channelId: TEST_CHANNEL_ID,
+          name: "To Discard",
+          progress: [],
+        },
+      ]);
+      mockDeleteQuest.mockResolvedValue(true);
+
+      const result = (await discardPreparedQuest(
+        TEST_CHANNEL_ID,
+        "q1",
+      )) as {
+        data: { content: string; flags: number };
+      };
+
+      expect(mockDeleteQuest).toHaveBeenCalledWith(TEST_CHANNEL_ID, "q1");
+      expect(result.data.content).toContain("To Discard");
+      expect(result.data.content).toContain("discarded");
+      expect(result.data.flags).toBe(MessageFlags.Ephemeral)
+    });
+
+    it("returns not found when delete returns false", async () => {
+      mockGetPreparedQuests.mockResolvedValue([]);
+      mockDeleteQuest.mockResolvedValue(false);
+
+      const result = (await discardPreparedQuest(
+        TEST_CHANNEL_ID,
+        "q1",
+      )) as {
+        data: { content: string };
+      };
+
+      expect(result.data.content).toBe("Quest not found. Please try again.");
     });
   });
 

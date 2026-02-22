@@ -6,12 +6,18 @@ import {
   buildDeleteModalResponse,
   buildClearModalResponse,
   buildSubquestModalResponse,
+  buildPrepareModalResponse,
+  buildRevealModalResponse,
+  buildDiscardModalResponse,
   type QuestAdvanceModalConfig,
   type QuestAddModalConfig,
   type QuestCompleteModalConfig,
   type QuestSubquestModalConfig,
   type QuestClearModalConfig,
   type QuestDeleteModalConfig,
+  type QuestPrepareModalConfig,
+  type QuestRevealModalConfig,
+  type QuestDiscardModalConfig,
 } from "./questsResponseBuilders";
 import {
   ComponentType,
@@ -237,6 +243,111 @@ describe("questsResponseBuilders", () => {
           custom_id: "parent-select",
           placeholder: "Choose parent quest...",
           options: [{ label: "Main Quest", value: "q1", emoji: { name: "▶️" } }],
+        },
+      });
+    });
+  });
+
+  describe("buildPrepareModalResponse", () => {
+    const config: QuestPrepareModalConfig = {
+      modalId: "prepare-modal",
+      parentQuestSelectId: "parent-select",
+      nameInputId: "name-input",
+      progressInputId: "progress-input",
+    };
+
+    it("returns modal with no-parent option when no quests", () => {
+      const result = buildPrepareModalResponse([], config) as {
+        type: number;
+        data: { custom_id: string; title: string; components: unknown[] };
+      };
+
+      expect(result.type).toBe(InteractionResponseType.Modal);
+      expect(result.data.custom_id).toBe("prepare-modal");
+      expect(result.data.title).toBe("Prepare Quest");
+      expect(result.data.components).toHaveLength(3);
+      const selectComponent = (result.data.components[0] as { component?: { options?: unknown[] } })
+        .component;
+      expect(selectComponent?.options).toEqual([
+        { label: "— No parent (top-level quest) —", value: "" },
+      ]);
+    });
+
+    it("returns modal with parent options when quests exist", () => {
+      const topLevelQuests = [SAMPLE_QUESTS[0]];
+      const result = buildPrepareModalResponse(topLevelQuests, config) as {
+        type: number;
+        data: { custom_id: string; components: unknown[] };
+      };
+
+      expect(result.data.components[0]).toMatchObject({
+        type: ComponentType.Label,
+        label: "Parent Quest",
+        component: {
+          type: ComponentType.StringSelect,
+          custom_id: "parent-select",
+        },
+      });
+      expect(result.data.components[1]).toMatchObject({
+        type: ComponentType.Label,
+        label: "Name",
+        component: { custom_id: "name-input" },
+      });
+      expect(result.data.components[2]).toMatchObject({
+        type: ComponentType.Label,
+        label: "Details",
+        component: { custom_id: "progress-input" },
+      });
+    });
+  });
+
+  describe("buildRevealModalResponse", () => {
+    const config: QuestRevealModalConfig = {
+      modalId: "reveal-modal",
+      questSelectId: "quest-select",
+    };
+
+    it("returns modal with quest select", () => {
+      const result = buildRevealModalResponse(SAMPLE_QUESTS, config) as {
+        type: number;
+        data: { custom_id: string; title: string; components: unknown[] };
+      };
+
+      expect(result.type).toBe(InteractionResponseType.Modal);
+      expect(result.data.custom_id).toBe("reveal-modal");
+      expect(result.data.title).toBe("Reveal Prepared Quest");
+      expect(result.data.components[0]).toMatchObject({
+        type: ComponentType.Label,
+        label: "Quest",
+        component: {
+          type: ComponentType.StringSelect,
+          custom_id: "quest-select",
+        },
+      });
+    });
+  });
+
+  describe("buildDiscardModalResponse", () => {
+    const config: QuestDiscardModalConfig = {
+      modalId: "discard-modal",
+      questSelectId: "quest-select",
+    };
+
+    it("returns modal with quest select", () => {
+      const result = buildDiscardModalResponse(SAMPLE_QUESTS, config) as {
+        type: number;
+        data: { custom_id: string; title: string; components: unknown[] };
+      };
+
+      expect(result.type).toBe(InteractionResponseType.Modal);
+      expect(result.data.custom_id).toBe("discard-modal");
+      expect(result.data.title).toBe("Discard Prepared Quest");
+      expect(result.data.components[0]).toMatchObject({
+        type: ComponentType.Label,
+        label: "Quest",
+        component: {
+          type: ComponentType.StringSelect,
+          custom_id: "quest-select",
         },
       });
     });

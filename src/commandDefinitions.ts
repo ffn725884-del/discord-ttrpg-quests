@@ -41,6 +41,9 @@ export const QUEST_SUBCOMMANDS = {
   ADVANCE: "advance",
   ADD: "add",
   SUBQUEST: "subquest",
+  PREPARE: "prepare",
+  REVEAL: "reveal",
+  DISCARD: "discard",
   COMPLETE: "complete",
   DELETE: "delete",
   CLEAR: "clear",
@@ -109,6 +112,21 @@ export const QUESTS_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
     {
       name: QUEST_SUBCOMMANDS.SUBQUEST,
       description: "Add a subquest to an existing quest",
+      type: ApplicationCommandOptionType.Subcommand,
+    },
+    {
+      name: QUEST_SUBCOMMANDS.PREPARE,
+      description: "Prepare a quest for later reveal (GM only)",
+      type: ApplicationCommandOptionType.Subcommand,
+    },
+    {
+      name: QUEST_SUBCOMMANDS.REVEAL,
+      description: "Reveal a prepared quest to everyone (GM only)",
+      type: ApplicationCommandOptionType.Subcommand,
+    },
+    {
+      name: QUEST_SUBCOMMANDS.DISCARD,
+      description: "Discard a prepared quest (GM only)",
       type: ApplicationCommandOptionType.Subcommand,
     },
     {

@@ -6,6 +6,7 @@
     "test": "jest",
     "start": "tsx src/app.ts",
     "dev": "nodemon --exec \"tsx src/app.ts\"",
+    "migrate": "tsx scripts/migrate.ts",
     "register": "tsx scripts/register.ts",
     "ts:check": "tsc --noEmit",
     "lint": "eslint .",

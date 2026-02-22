@@ -46,6 +46,23 @@ export interface QuestDeleteModalConfig {
   questSelectId: string;
 }
 
+export interface QuestPrepareModalConfig {
+  modalId: string;
+  parentQuestSelectId: string;
+  nameInputId: string;
+  progressInputId: string;
+}
+
+export interface QuestRevealModalConfig {
+  modalId: string;
+  questSelectId: string;
+}
+
+export interface QuestDiscardModalConfig {
+  modalId: string;
+  questSelectId: string;
+}
+
 interface QuestOption {
   id: string;
   name: string;
@@ -296,6 +313,141 @@ export function buildClearModalResponse(
             custom_id: config.confirmInputId,
             style: TextInputStyle.Short,
             placeholder: STRINGS.clearModalPlaceholder,
+            required: true,
+          },
+        },
+      ],
+    },
+  };
+}
+
+/**
+ * Builds a Discord modal for preparing a quest (optional parent, name, details).
+ *
+ * @param topLevelQuests - List of top-level quests for optional parent dropdown
+ * @param config - Modal configuration (IDs for modal, parent select, name, progress inputs)
+ * @returns Discord API interaction response (modal)
+ */
+export function buildPrepareModalResponse(
+  topLevelQuests: QuestOption[],
+  config: QuestPrepareModalConfig,
+): APIInteractionResponse {
+  const noParentOption: APISelectMenuOption = {
+    label: STRINGS.prepareNoParentOption,
+    value: "",
+  };
+  const parentOptions = topLevelQuests.length
+    ? [noParentOption, ...addEmojiToQuestOptions(topLevelQuests, MAIN_QUEST_EMOJI)]
+    : [noParentOption];
+
+  return {
+    type: InteractionResponseType.Modal,
+    data: {
+      custom_id: config.modalId,
+      title: STRINGS.prepareModalTitle,
+      components: [
+        {
+          type: ComponentType.Label,
+          label: STRINGS.prepareModalParentLabel,
+          description: STRINGS.prepareModalParentDescription,
+          component: {
+            type: ComponentType.StringSelect,
+            custom_id: config.parentQuestSelectId,
+            placeholder: STRINGS.parentQuestPlaceholder,
+            options: parentOptions,
+            required: true,
+          },
+        },
+        {
+          type: ComponentType.Label,
+          label: STRINGS.prepareModalNameLabel,
+          component: {
+            type: ComponentType.TextInput,
+            custom_id: config.nameInputId,
+            style: TextInputStyle.Short,
+            placeholder: STRINGS.prepareModalNamePlaceholder,
+            required: true,
+          },
+        },
+        {
+          type: ComponentType.Label,
+          label: STRINGS.prepareModalDetailsLabel,
+          description: STRINGS.prepareModalDetailsDescription,
+          component: {
+            type: ComponentType.TextInput,
+            custom_id: config.progressInputId,
+            style: TextInputStyle.Paragraph,
+            placeholder: STRINGS.prepareModalDetailsPlaceholder,
+            required: false,
+          },
+        },
+      ],
+    },
+  };
+}
+
+/**
+ * Builds a Discord modal for revealing a prepared quest.
+ *
+ * @param quests - List of prepared quests to populate the select dropdown
+ * @param config - Modal configuration (IDs for modal, quest select)
+ * @returns Discord API interaction response (modal)
+ */
+export function buildRevealModalResponse(
+  quests: QuestOption[],
+  config: QuestRevealModalConfig,
+): APIInteractionResponse {
+  const options = buildQuestSelectOptions(quests);
+  return {
+    type: InteractionResponseType.Modal,
+    data: {
+      custom_id: config.modalId,
+      title: STRINGS.revealModalTitle,
+      components: [
+        {
+          type: ComponentType.Label,
+          label: STRINGS.revealModalQuestLabel,
+          description: STRINGS.revealModalQuestDescription,
+          component: {
+            type: ComponentType.StringSelect,
+            custom_id: config.questSelectId,
+            placeholder: STRINGS.questSelectPlaceholder,
+            options,
+            required: true,
+          },
+        },
+      ],
+    },
+  };
+}
+
+/**
+ * Builds a Discord modal for discarding a prepared quest.
+ *
+ * @param quests - List of prepared quests to populate the select dropdown
+ * @param config - Modal configuration (IDs for modal, quest select)
+ * @returns Discord API interaction response (modal)
+ */
+export function buildDiscardModalResponse(
+  quests: QuestOption[],
+  config: QuestDiscardModalConfig,
+): APIInteractionResponse {
+  const options = buildQuestSelectOptions(quests);
+  return {
+    type: InteractionResponseType.Modal,
+    data: {
+      custom_id: config.modalId,
+      title: STRINGS.discardModalTitle,
+      components: [
+        {
+          type: ComponentType.Label,
+          label: STRINGS.discardModalQuestLabel,
+          description: STRINGS.discardModalQuestDescription,
+          component: {
+            type: ComponentType.StringSelect,
+            custom_id: config.questSelectId,
+            placeholder: STRINGS.questSelectPlaceholder,
+            options,
             required: true,
           },
         },

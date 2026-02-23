@@ -10,17 +10,6 @@ import {
   PermissionFlagsBits,
 } from "discord-api-types/v10";
 
-const integrationTypes = [
-  ApplicationIntegrationType.GuildInstall,
-  ApplicationIntegrationType.UserInstall,
-] as const;
-
-const contexts = [
-  InteractionContextType.Guild,
-  InteractionContextType.BotDM,
-  InteractionContextType.PrivateChannel,
-] as const;
-
 /** Command names for routing (e.g. switch cases) and command definitions. */
 export const COMMAND_NAMES = {
   QUESTS: "quests",
@@ -131,7 +120,8 @@ export const QUESTS_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
     },
     {
       name: QUEST_SUBCOMMANDS.COMPLETE,
-      description: "Complete a quest with a resolution (e.g., We have slain the dragon)",
+      description:
+        "Complete a quest with a resolution (e.g., We have slain the dragon)",
       type: ApplicationCommandOptionType.Subcommand,
     },
     {
@@ -150,8 +140,15 @@ export const QUESTS_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
       type: ApplicationCommandOptionType.Subcommand,
     },
   ],
-  integration_types: [...integrationTypes],
-  contexts: [...contexts],
+  integration_types: [
+    ApplicationIntegrationType.GuildInstall,
+    ApplicationIntegrationType.UserInstall,
+  ],
+  contexts: [
+    InteractionContextType.Guild,
+    InteractionContextType.BotDM,
+    InteractionContextType.PrivateChannel,
+  ],
 };
 
 export const GM_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
@@ -171,7 +168,5 @@ export const GM_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
 };
 
 /** Commands to register with Discord. */
-export const COMMANDS_FOR_REGISTRATION: RESTPutAPIApplicationCommandsJSONBody = [
-  QUESTS_COMMAND,
-  GM_COMMAND,
-];
+export const COMMANDS_FOR_REGISTRATION: RESTPutAPIApplicationCommandsJSONBody =
+  [QUESTS_COMMAND, GM_COMMAND];

@@ -332,32 +332,12 @@ export function buildPrepareModalResponse(
   topLevelQuests: QuestOption[],
   config: QuestPrepareModalConfig,
 ): APIInteractionResponse {
-  const noParentOption: APISelectMenuOption = {
-    label: STRINGS.prepareNoParentOption,
-    value: "",
-  };
-  const parentOptions = topLevelQuests.length
-    ? [noParentOption, ...addEmojiToQuestOptions(topLevelQuests, MAIN_QUEST_EMOJI)]
-    : [noParentOption];
-
-  return {
+  const baseModal = {
     type: InteractionResponseType.Modal,
     data: {
       custom_id: config.modalId,
       title: STRINGS.prepareModalTitle,
       components: [
-        {
-          type: ComponentType.Label,
-          label: STRINGS.prepareModalParentLabel,
-          description: STRINGS.prepareModalParentDescription,
-          component: {
-            type: ComponentType.StringSelect,
-            custom_id: config.parentQuestSelectId,
-            placeholder: STRINGS.parentQuestPlaceholder,
-            options: parentOptions,
-            required: true,
-          },
-        },
         {
           type: ComponentType.Label,
           label: STRINGS.prepareModalNameLabel,
@@ -381,6 +361,33 @@ export function buildPrepareModalResponse(
             required: false,
           },
         },
+      ],
+    },
+  } satisfies APIInteractionResponse;
+
+  if (topLevelQuests.length === 0) {
+    return baseModal;
+  }
+
+  return {
+    type: InteractionResponseType.Modal,
+    data: {
+      custom_id: config.modalId,
+      title: STRINGS.prepareModalTitle,
+      components: [
+        {
+          type: ComponentType.Label,
+          label: STRINGS.prepareModalParentLabel,
+          description: STRINGS.prepareModalParentDescription,
+          component: {
+            type: ComponentType.StringSelect,
+            custom_id: config.parentQuestSelectId,
+            placeholder: STRINGS.parentQuestPlaceholder,
+            options: addEmojiToQuestOptions(topLevelQuests, MAIN_QUEST_EMOJI),
+            required: false,
+          },
+        },
+        ...baseModal.data.components,
       ],
     },
   };

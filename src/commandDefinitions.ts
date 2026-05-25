@@ -37,6 +37,7 @@ export const QUEST_SUBCOMMANDS = {
   DELETE: "delete",
   CLEAR: "clear",
   SYSTEM_STATUS: "system-status",
+  API_KEY: "api-key",
 } as const;
 
 /** Showme subcommand names (ephemeral variants of current, all, completed). */
@@ -137,6 +138,11 @@ export const QUESTS_COMMAND: RESTPostAPIChatInputApplicationCommandsJSONBody = {
     {
       name: QUEST_SUBCOMMANDS.SYSTEM_STATUS,
       description: "Internal app status (up, database connection)",
+      type: ApplicationCommandOptionType.Subcommand,
+    },
+    {
+      name: QUEST_SUBCOMMANDS.API_KEY,
+      description: "Generate an API key for this channel (for external read-only access)",
       type: ApplicationCommandOptionType.Subcommand,
     },
   ],

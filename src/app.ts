@@ -10,10 +10,13 @@ import { handleModalSubmit } from "./interactions/modalSubmits";
 import { handleMessageComponent } from "./interactions/messageComponents";
 import { initSchema } from "./db/index";
 import { debugMiddleware } from "./middleware/debugMiddleware";
+import { apiRouter } from "./routes/apiRoutes";
 
 const app = express();
 
 const PORT = process.env.PORT || 3000;
+
+app.use("/api", apiRouter);
 
 app.post(
   "/interactions",
@@ -37,6 +40,11 @@ app.post(
 );
 
 async function start(): Promise<void> {
+  if (!process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is not set. Run `npm run generate-secret` to create one.");
+    process.exit(1);
+  }
+
   await initSchema();
   app.listen(PORT, (err) => {
     if (err) {

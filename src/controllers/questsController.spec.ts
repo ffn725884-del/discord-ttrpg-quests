@@ -333,7 +333,7 @@ describe("questsController", () => {
       progressInputId: "progress-input",
     };
 
-    it("returns modal with no-parent option when no top-level quests", async () => {
+    it("omits parent select when no top-level quests", async () => {
       mockGetTopLevelQuestsForParentSelect.mockResolvedValue([]);
 
       const result = (await getPrepareModal(TEST_CHANNEL_ID, modalConfig)) as {
@@ -343,7 +343,7 @@ describe("questsController", () => {
 
       expect(result.type).toBe(InteractionResponseType.Modal);
       expect(result.data.custom_id).toBe("prepare-modal-1");
-      expect(result.data.components).toHaveLength(3);
+      expect(result.data.components).toHaveLength(2);
       expect(mockGetTopLevelQuestsForParentSelect).toHaveBeenCalledWith(
         TEST_CHANNEL_ID,
       );

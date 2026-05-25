@@ -127,6 +127,26 @@ export async function installGlobalCommands(
 }
 
 /**
+ * Fetches a guild member. Returns null if the user is not in the guild (404).
+ * @see https://discord.com/developers/docs/resources/guild#get-guild-member
+ */
+export async function getGuildMember(
+  guildId: string,
+  userId: string,
+): Promise<{ user: { id: string } } | null> {
+  const res = await fetch(
+    `${DISCORD_API_BASE}/guilds/${guildId}/members/${userId}`,
+    { headers: getAuthHeaders() },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as DiscordApiErrorBody;
+    throw createDiscordApiError(res.status, err, "get guild member");
+  }
+  return res.json() as Promise<{ user: { id: string } }>;
+}
+
+/**
  * Adds a role to a guild member.
  * @see https://discord.com/developers/docs/resources/guild#add-guild-member-role
  */

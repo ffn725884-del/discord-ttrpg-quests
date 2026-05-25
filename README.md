@@ -37,6 +37,7 @@ Get these values from the [Discord Developer Portal](https://discord.com/develop
 Optional:
 - `DATABASE_URL` – Path to SQLite database file (default: `./data/quests.db`)
 - `DEBUG=1` – Enable debug logging for incoming interactions
+- `JWT_SECRET` – Secret used to sign API tokens (required if using the REST API — see [REST API](#rest-api))
 
 ## Discord setup
 
@@ -76,6 +77,7 @@ The server listens on `PORT` (default 3000) and handles Discord interactions at 
 | `/quests delete` | Permanently delete a quest |
 | `/quests clear` | Permanently clear all quests in the channel |
 | `/quests system-status` | Internal app status (up, database connection) |
+| `/quests api-key` | Generate a personal API key for this channel (ephemeral) |
 
 ## Scripts
 
@@ -88,6 +90,77 @@ The server listens on `PORT` (default 3000) and handles Discord interactions at 
 | `npm run lint` | Run ESLint |
 | `npm run lint:fix` | Run ESLint with auto-fix |
 | `npm run ts:check` | Type-check with TypeScript |
+| `npm run generate-secret` | Print a ready-to-paste `JWT_SECRET=<hex>` line for your `.env` |
+
+## REST API
+
+The bot exposes a read-only HTTP API for accessing quest data from external tools (stream overlays, campaign websites, etc.). Access is tied to Discord identity: only current guild members can obtain tokens.
+
+### Setup
+
+1. Generate a `JWT_SECRET` and add it to your `.env`:
+
+```bash
+npm run generate-secret >> .env
+```
+
+2. Run migrations to create the `api_keys` table:
+
+```bash
+npm run migrate
+```
+
+### Getting an API key
+
+In any Discord channel where the bot is present, run:
+
+```
+/quests api-key
+```
+
+The bot replies with a 64-character hex key visible only to you. Save it — it won't be shown again. Re-running the command rotates the key (the old one stops working immediately).
+
+### Authenticating requests
+
+The API uses a two-step flow so your long-lived key is never sent on every request:
+
+**Step 1 — Exchange your API key for a short-lived token (valid 15 minutes):**
+
+```bash
+curl -X POST https://your-domain.com/api/token \
+  -H "Content-Type: application/json" \
+  -d '{"api_key": "your-key-here"}'
+# → {"token": "<jwt>"}
+```
+
+The server verifies your API key and checks with Discord that you're still a member of the guild. If you've left the guild, the request is rejected.
+
+**Step 2 — Fetch quests using the token:**
+
+```bash
+curl https://your-domain.com/api/quests \
+  -H "Authorization: Bearer <jwt>"
+# → {"quests": [...]}
+```
+
+### Response shape
+
+```json
+{
+  "quests": [
+    {
+      "id": "1",
+      "channelId": "123456789",
+      "name": "Slay the Dragon",
+      "progress": ["Found the lair", "Defeated the guards"],
+      "completed": false,
+      "parentQuestId": null
+    }
+  ]
+}
+```
+
+Prepared (GM-only) quests are never included in API responses.
 
 ## Tech stack
 

@@ -256,7 +256,7 @@ describe("questsResponseBuilders", () => {
       progressInputId: "progress-input",
     };
 
-    it("returns modal with no-parent option when no quests", () => {
+    it("omits parent select when no quests", () => {
       const result = buildPrepareModalResponse([], config) as {
         type: number;
         data: { custom_id: string; title: string; components: unknown[] };
@@ -265,12 +265,17 @@ describe("questsResponseBuilders", () => {
       expect(result.type).toBe(InteractionResponseType.Modal);
       expect(result.data.custom_id).toBe("prepare-modal");
       expect(result.data.title).toBe("Prepare Quest");
-      expect(result.data.components).toHaveLength(3);
-      const selectComponent = (result.data.components[0] as { component?: { options?: unknown[] } })
-        .component;
-      expect(selectComponent?.options).toEqual([
-        { label: "— No parent (top-level quest) —", value: "" },
-      ]);
+      expect(result.data.components).toHaveLength(2);
+      expect(result.data.components[0]).toMatchObject({
+        type: ComponentType.Label,
+        label: "Name",
+        component: { custom_id: "name-input" },
+      });
+      expect(result.data.components[1]).toMatchObject({
+        type: ComponentType.Label,
+        label: "Details",
+        component: { custom_id: "progress-input" },
+      });
     });
 
     it("returns modal with parent options when quests exist", () => {

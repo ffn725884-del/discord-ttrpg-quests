@@ -10,6 +10,7 @@ import {
   QUEST_SUBCOMMANDS,
   QUEST_SHOWME_SUBCOMMANDS,
 } from "../../commandDefinitions";
+import { generateApiKey, upsertApiKey } from "../../dal/apiKeysDAL";
 import { hasAdminPermission, memberHasRole } from "../../utils/permissions";
 import {
   buildPermissionDeniedResponse,
@@ -236,6 +237,35 @@ export async function handleQuests(
     case QUEST_SUBCOMMANDS.SYSTEM_STATUS: {
       const response = await getStatusForDiscord();
       res.send(response);
+      return;
+    }
+    case QUEST_SUBCOMMANDS.API_KEY: {
+      if (!interaction.guild_id) {
+        res.send({
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            content: "This command must be used in a server channel.",
+            flags: MessageFlags.Ephemeral,
+          },
+        });
+        return;
+      }
+      const key = generateApiKey();
+      await upsertApiKey(
+        interaction.member!.user.id,
+        interaction.guild_id,
+        channelId,
+        key,
+      );
+      res.send({
+        type: InteractionResponseType.ChannelMessageWithSource,
+        data: {
+          content:
+            `Your API key for this channel:\n\`\`\`\n${key}\n\`\`\`\n` +
+            `Store it securely — it won't be shown again. Re-run \`/quests api-key\` to rotate it (this invalidates the old key).`,
+          flags: MessageFlags.Ephemeral,
+        },
+      });
       return;
     }
     default:
